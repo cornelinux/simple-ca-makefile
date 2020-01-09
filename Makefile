@@ -57,7 +57,7 @@ help:
 	@echo "make gencrl [ldap=1]"
 	@echo "			generate CRL"
 	@echo "			if ldap=1 is given, the CRL will also be published in LDAP"
-	@echo 
+	@echo
 	@echo "make publishcrl"
 	@echo "			publish CRL in WWW."
 	@echo
@@ -66,7 +66,7 @@ help:
 	@echo
 	@echo "make sign csr=csr-file ext=<extensions>"
 	@echo "			sign a certificate request"
-	@echo 
+	@echo
 	@echo "make etoken name=<name> size=<key size> id=<Key ID> label=<Key label>"
 	@echo "			enroll an etoken for a user"
 	@echo
@@ -82,9 +82,12 @@ help:
 	@echo "make validcerts"
 	@echo "			lists all valid certificates"
 	@echo
+	@echo "make listruntime"
+	@echo "     lists runtime of certificates"
+	@echo
 	@echo "make listrevoked"
 	@echo "			lists all revoked certificates"
-	@echo 
+	@echo
 	@echo "make publishcert cn=<user> cert=<certificate serial>"
 	@echo "			publish certificate in LDAP"
 	@echo "			ex: make publish cert cn=koelbel cert=25"
@@ -100,7 +103,7 @@ publishcert:
 	sed -e s/%BASE%/'cn=$(cn), ${LDAP_USER_BASE}'/ -e s/%CERT_ATTR%/${LDAP_CERT_ATTR}/g -e s/%FILE%/'${DATA_DIR}\/$(cert).der'/ ${LDAP_TEMPLATE} > ${LDAP_TMP_FILE}
 	@echo "running ldapmodify"
 	openssl x509 -in ${DATA_DIR}/$(cert).pem -out ${DATA_DIR}/$(cert).der -outform DER
-	ldapmodify -a -D ${LDAP_BIND} -x -W -f ${LDAP_TMP_FILE}  
+	ldapmodify -a -D ${LDAP_BIND} -x -W -f ${LDAP_TMP_FILE}
 
 initca:
 	@echo
@@ -113,6 +116,13 @@ listcerts:
 	@echo
 	@echo "--------------- Issued Certficates ------------------------------"
 	@for cert in $$(ls ${DATA_DIR}/??.pem); do echo -n $$cert:; openssl x509 -in $$cert -text | grep -B3 Subject:; done
+	@echo
+
+listruntime:
+	@echo
+	@echo "--------------- Runtimne of issued Certficates ------------------"
+	#openssl x509 -enddate -noout -in file.pem
+	@for cert in $$(ls ${DATA_DIR}/???*.pem); do echo -n $$cert:; openssl x509 -in $$cert -enddate -noout; done
 	@echo
 
 validcerts:
@@ -150,7 +160,7 @@ publishcrl:
 	cp ${DATA_DIR}/index.txt /var/www
 	cp ${CRL_DIR}/${CRL_DER} /var/www/crl.crl
 	scp ${CRL_DIR}/${CRL_DER} ${CRL_REMOTE_DEST}
-        
+
 revoke:
 	@echo
 	@echo "------------------ Revoking Certificate ----------------------------"
@@ -176,7 +186,7 @@ req:
 
 
 extensions:
-	@echo 
+	@echo
 	@echo "------------- Available Extensions ----------------------"
 	grep -B1 ^keyUsage ${CONF}
 
@@ -204,5 +214,3 @@ etoken:
 	@echo Loading cert to the token
 	@echo =============================
 	pkcs11-tool --module /usr/lib/libeTPkcs11.so  -w ${DATA_DIR}/$(name).der -y cert -l --slot 0 --id $(id)  -a $(label)
-
-	
